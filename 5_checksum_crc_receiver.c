@@ -1,11 +1,9 @@
-// Checksum and CRC Error Detection - Receiver (run this FIRST)
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 
-// 16-bit checksum: add all bytes, wrap the carry, take complement
 unsigned int checksum(char *data) {
     unsigned int total = 0;
     for (int i = 0; data[i] != '\0'; i++)
@@ -15,23 +13,22 @@ unsigned int checksum(char *data) {
     return ~total & 0xFFFF;
 }
 
-// Mod-2 (XOR) division. Remainder is left in the last (n-1) bits of bits[].
 void crc_remainder(char *bits, char *divisor) {
     int n = strlen(divisor);
     int len = strlen(bits);
     for (int i = 0; i <= len - n; i++) {
         if (bits[i] == '1') {
             for (int j = 0; j < n; j++)
-                bits[i + j] = (bits[i + j] == divisor[j]) ? '0' : '1';   // XOR
+                bits[i + j] = (bits[i + j] == divisor[j]) ? '0' : '1';
         }
     }
 }
 
 int main() {
     int server_fd, conn_fd;
-    struct sockaddr_in addr;
+    struct sockaddr_in addr = {0};
     char buffer[1024];
-    char divisor[] = "1101";                 // x^3 + x^2 + 1
+    char divisor[] = "1101";
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     addr.sin_family = AF_INET;
@@ -45,20 +42,17 @@ int main() {
     memset(buffer, 0, sizeof(buffer));
     recv(conn_fd, buffer, sizeof(buffer) - 1, 0);
 
-    // Message format:  text | checksum | codeword
     char *text = strtok(buffer, "|");
     unsigned int chk = atoi(strtok(NULL, "|"));
     char *codeword = strtok(NULL, "|");
 
     printf("Received text: %s\n", text);
 
-    // --- Checksum check ---
     if (checksum(text) == chk)
         printf("Checksum: NO error\n");
     else
         printf("Checksum: ERROR detected\n");
 
-    // --- CRC check: remainder must be all zeros ---
     crc_remainder(codeword, divisor);
     int error = 0;
     for (int i = 0; codeword[i] != '\0'; i++)

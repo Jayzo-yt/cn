@@ -1,4 +1,3 @@
-// Stop-and-Wait ARQ - Receiver (run this FIRST)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,48 +6,44 @@
 #include <arpa/inet.h>
 
 int main() {
-    int sock;
-    struct sockaddr_in my_addr, sender_addr;
-    socklen_t len = sizeof(sender_addr);
-    char buffer[1024], msg[1000], ack[20];
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    struct sockaddr_in receiver = {0}, sender;
+    socklen_t len = sizeof(sender);
+    char packet[100], ack[20], msg[80];
     int seq, expected = 0;
 
     srand(time(NULL));
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    my_addr.sin_port = htons(7000);
-    bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
+    receiver.sin_family = AF_INET;
+    receiver.sin_port = htons(7000);
+    receiver.sin_addr.s_addr = inet_addr("127.0.0.1");
+    bind(sock, (struct sockaddr *)&receiver, sizeof(receiver));
     printf("Receiver ready...\n");
 
     while (1) {
-        memset(buffer, 0, sizeof(buffer));
-        recvfrom(sock, buffer, sizeof(buffer) - 1, 0,
-                 (struct sockaddr *)&sender_addr, &len);
-        sscanf(buffer, "%d|%s", &seq, msg);            // format: seq|data
+        int n = recvfrom(sock, packet, sizeof(packet) - 1, 0,
+                 (struct sockaddr *)&sender, &len);
+        packet[n] = '\0';
+        sscanf(packet, "%d|%79s", &seq, msg);
 
         if (strcmp(msg, "END") == 0) {
             printf("Transmission finished\n");
             break;
         }
 
-        // Simulate ACK loss: 30% of the time, do not reply
         if (rand() % 10 < 3) {
-            printf("Frame %d received but ACK lost (simulated)\n", seq);
+            printf("ACK lost for frame %d\n", seq);
             continue;
         }
 
         if (seq == expected) {
             printf("Received frame %d : %s\n", seq, msg);
-            expected = 1 - expected;                   // toggle 0 <-> 1
+            expected = 1 - expected;
         } else {
             printf("Duplicate frame %d - discarded\n", seq);
         }
 
         sprintf(ack, "%d", seq);
-        sendto(sock, ack, strlen(ack), 0,
-               (struct sockaddr *)&sender_addr, len);  // send ACK
+        sendto(sock, ack, strlen(ack), 0, (struct sockaddr *)&sender, len);
     }
 
     close(sock);

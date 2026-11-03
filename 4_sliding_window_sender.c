@@ -6,55 +6,38 @@
 
 int main()
 {
-    int sock, base = 0, next = 0;
-    int total = 5, window = 3;
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    int base = 0, next = 0, total = 5, window = 3;
     char buffer[100], packet[100];
 
     char *frames[] = {"F0", "F1", "F2", "F3", "F4"};
 
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
+    struct sockaddr_in addr = {0};
 
-    // Create UDP socket
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-    // Set timeout of 2 seconds
-    struct timeval tv;
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
-
+    struct timeval tv = {2, 0};
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO,
                &tv, sizeof(tv));
 
-    // Receiver address
     addr.sin_family = AF_INET;
     addr.sin_port = htons(8000);
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     while (base < total)
     {
-        // Send frames within window
         while (next < base + window && next < total)
         {
-            printf("Sending frame %d\n", next);
-
             sprintf(packet, "%d|%s", next, frames[next]);
-
-            sendto(sock, packet, strlen(packet), 0,
-                   (struct sockaddr *)&addr, len);
-
+            printf("Send: %s\n", packet);
+            sendto(sock, packet, strlen(packet), 0, (struct sockaddr *)&addr, sizeof(addr));
             next++;
         }
 
-        // Receive ACK
         int n = recvfrom(sock, buffer, sizeof(buffer) - 1,
                          0, NULL, NULL);
 
         if (n < 0)
         {
-            // Timeout: resend from base
-            printf("Timeout! Resending from frame %d\n", base);
-
+            printf("Timeout: resend from %d\n", base);
             next = base;
         }
         else
@@ -65,15 +48,12 @@ int main()
 
             printf("ACK received: %d\n", ack);
 
-            // Move window forward
             if (ack >= base)
                 base = ack + 1;
         }
     }
 
-    // End transmission
-    sendto(sock, "0|END", 5, 0,
-           (struct sockaddr *)&addr, len);
+    sendto(sock, "0|END", 5, 0, (struct sockaddr *)&addr, sizeof(addr));
 
     printf("All frames sent successfully\n");
 
