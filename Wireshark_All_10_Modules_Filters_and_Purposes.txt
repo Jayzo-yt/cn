@@ -1,0 +1,203 @@
+WIRESHARK LAB – ALL 10 MODULES
+IMPORTANT FILTERS AND PURPOSES
+========================================
+
+Module 1 – TCP Three-Way Handshake
+
+Filters:
+tcp
+tcp.flags.syn == 1 && tcp.flags.ack == 0
+tcp.flags.syn == 1 && tcp.flags.ack == 1
+tcp.flags.ack == 1 && tcp.flags.syn == 0
+tcp.stream eq 0
+
+Purpose:
+- tcp – Display all TCP packets.
+- SYN=1, ACK=0 – Display initial client SYN packets.
+- SYN=1, ACK=1 – Display server SYN-ACK packets.
+- ACK=1, SYN=0 – Display ACK packets without SYN (including the final handshake ACK).
+- tcp.stream eq 0 – Display TCP stream 0; replace 0 with the required stream number.
+
+----------------------------------------
+Module 2 – TCP Connection Termination
+
+Filters:
+tcp.flags.fin == 1
+tcp.flags.fin == 1 && tcp.flags.ack == 1
+tcp.flags.reset == 1
+tcp.flags.ack == 1
+tcp.stream eq 0
+
+Purpose:
+- FIN – Display packets requesting orderly TCP connection closure.
+- FIN and ACK – Display packets with both FIN and ACK flags set.
+- RST – Display TCP connection reset packets.
+- ACK – Display packets with the acknowledgment flag set.
+- tcp.stream eq 0 – Display packets belonging to TCP stream 0.
+
+----------------------------------------
+Module 3 – Sequence Numbers, RTT and EstimatedRTT
+
+Filters:
+tcp.len > 0
+http.request.method == "GET"
+http.request.method == "POST"
+tcp.stream eq 0 && tcp.len > 0
+tcp.analysis.ack_rtt
+
+Purpose:
+- tcp.len > 0 – Display TCP segments containing data.
+- HTTP GET – Display HTTP GET requests.
+- HTTP POST – Display HTTP POST requests.
+- Stream data – Display data-bearing TCP segments in stream 0.
+- tcp.analysis.ack_rtt – Display packets with TCP acknowledgment RTT analysis.
+
+----------------------------------------
+Module 4 – TCP Flow Control and Retransmission
+
+Filters:
+tcp
+tcp.analysis.retransmission
+tcp.analysis.fast_retransmission
+tcp.analysis.duplicate_ack
+tcp.analysis.out_of_order
+tcp.analysis.lost_segment
+tcp.analysis.zero_window
+tcp.analysis.window_update
+
+Purpose:
+- tcp – Display all TCP packets.
+- Retransmission – Display TCP retransmission indications.
+- Fast retransmission – Display fast retransmission indications.
+- Duplicate ACK – Display duplicate acknowledgments.
+- Out-of-order – Display out-of-order TCP segment indications.
+- Lost segment – Display lost-segment indications.
+- Zero window – Display zero receive-window advertisements.
+- Window update – Display TCP window updates.
+
+----------------------------------------
+Module 5 – UDP Header Analysis
+
+Filters:
+udp
+udp.srcport == 53
+udp.dstport == 53
+udp.port == 8000
+
+Purpose:
+- udp – Display all UDP packets.
+- udp.srcport == 53 – Display UDP packets with source port 53.
+- udp.dstport == 53 – Display UDP packets with destination port 53.
+- udp.port == 8000 – Display UDP packets using port 8000 (example port; replace as needed).
+
+----------------------------------------
+Module 6 – UDP Port Relationships (DNS)
+
+Filters:
+dns
+dns.flags.response == 0
+dns.flags.response == 1
+udp.port == 53
+tcp.port == 53
+
+Purpose:
+- DNS – Display DNS packets.
+- Response 0 – DNS query.
+- Response 1 – DNS reply.
+- UDP port 53 – DNS traffic over UDP port 53.
+- TCP port 53 – DNS traffic over TCP port 53.
+
+----------------------------------------
+Module 7 – DNS and HTTP Together
+
+Filters:
+dns
+dns.flags.response == 0
+dns.flags.response == 1
+dns.qry.type == 1
+dns.qry.type == 28
+dns.qry.type == 5
+http.request
+http.request.method == "GET"
+http.response
+dns.resp.ttl
+
+Purpose:
+- dns – Display DNS packets.
+- Response 0 – Display DNS queries.
+- Response 1 – Display DNS responses.
+- Type 1 – Display DNS A (IPv4) queries.
+- Type 28 – Display DNS AAAA (IPv6) queries.
+- Type 5 – Display DNS CNAME queries.
+- http.request – Display HTTP requests.
+- HTTP GET – Display HTTP GET requests.
+- http.response – Display HTTP responses.
+- dns.resp.ttl – Display packets containing DNS response TTL fields.
+
+----------------------------------------
+Module 8 – Network Layer: ICMP and Traceroute
+
+Filters:
+icmp
+icmp.type == 8
+icmp.type == 0
+icmp.type == 11
+icmp.type == 3
+ip
+
+Purpose:
+- icmp – Display ICMP packets.
+- Type 8 – Display ICMP Echo Requests.
+- Type 0 – Display ICMP Echo Replies.
+- Type 11 – Display ICMP Time Exceeded messages.
+- Type 3 – Display ICMP Destination Unreachable messages.
+- ip – Display IPv4 packets.
+
+----------------------------------------
+Module 9 – DHCP (DORA) Analysis
+
+Filters:
+dhcp
+bootp
+dhcp.option.dhcp == 1
+dhcp.option.dhcp == 2
+dhcp.option.dhcp == 3
+dhcp.option.dhcp == 5
+dhcp.option.dhcp == 6
+udp.port == 67 || udp.port == 68
+
+Purpose:
+- dhcp – Display DHCP packets (newer Wireshark field name).
+- bootp – Display DHCP/BOOTP packets (older field name).
+- Type 1 – Display DHCP Discover packets.
+- Type 2 – Display DHCP Offer packets.
+- Type 3 – Display DHCP Request packets.
+- Type 5 – Display DHCP ACK packets.
+- Type 6 – Display DHCP NAK packets.
+- UDP 67 or 68 – Display packets using DHCP server/client ports.
+
+----------------------------------------
+Module 10 – Web Page Capture and Statistics
+
+Filters:
+tcp
+udp
+http
+dns
+tcp.flags.syn == 1 && tcp.flags.ack == 0
+tcp.len > 0
+tcp.flags.fin == 1
+tcp.flags.reset == 1
+
+Purpose:
+- tcp – Display all TCP packets.
+- udp – Display all UDP packets.
+- http – Display HTTP packets.
+- dns – Display DNS packets.
+- Initial SYN – Display TCP connection initiation packets.
+- tcp.len > 0 – Display TCP packets containing data.
+- FIN – Display TCP connection termination requests.
+- RST – Display TCP connection resets.
+
+========================================
+NOTE: These are Wireshark DISPLAY filters, not terminal commands. Apply them in the Wireshark display filter bar. Some field names differ between Wireshark versions.
