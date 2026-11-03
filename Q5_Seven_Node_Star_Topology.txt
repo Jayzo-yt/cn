@@ -1,0 +1,52 @@
+# Seven-node star: node 0 is the central node
+set ns [new Simulator]
+
+set nf [open q5.nam w]
+$ns namtrace-all $nf
+set tf [open q5.tr w]
+$ns trace-all $tf
+
+# Create seven nodes
+for {set i 0} {$i < 7} {incr i} {
+    set n($i) [$ns node]
+}
+
+# Connect every outer node to the central node
+for {set i 1} {$i < 7} {incr i} {
+    $ns duplex-link $n(0) $n($i) 1Mb 10ms DropTail
+}
+
+# Configure a star-like layout in NAM
+$ns duplex-link-op $n(0) $n(1) orient 0
+$ns duplex-link-op $n(0) $n(2) orient 60
+$ns duplex-link-op $n(0) $n(3) orient 120
+$ns duplex-link-op $n(0) $n(4) orient 180
+$ns duplex-link-op $n(0) $n(5) orient 240
+$ns duplex-link-op $n(0) $n(6) orient 300
+
+# Traffic from outer node 1 to outer node 6 via central node 0
+set udp [new Agent/UDP]
+$ns attach-agent $n(1) $udp
+
+set null [new Agent/Null]
+$ns attach-agent $n(6) $null
+$ns connect $udp $null
+
+set cbr [new Application/Traffic/CBR]
+$cbr set packetSize_ 512
+$cbr set interval_ 0.2
+$cbr attach-agent $udp
+
+$ns at 1.0 "$cbr start"
+$ns at 5.0 "$cbr stop"
+
+proc finish {} {
+    global ns nf tf
+    $ns flush-trace
+    close $nf
+    close $tf
+    exec nam q5.nam &
+    exit 0
+}
+$ns at 6.0 "finish"
+$ns run

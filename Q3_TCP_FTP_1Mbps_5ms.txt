@@ -1,0 +1,38 @@
+# Two-node TCP/FTP simulation with specified link properties
+set ns [new Simulator]
+
+set nf [open q3.nam w]
+$ns namtrace-all $nf
+set tf [open q3.tr w]
+$ns trace-all $tf
+
+set n0 [$ns node]
+set n1 [$ns node]
+
+# Required bandwidth = 1 Mbps; delay = 5 ms
+$ns duplex-link $n0 $n1 1Mb 5ms DropTail
+$ns duplex-link-op $n0 $n1 orient right
+
+set tcp [new Agent/TCP]
+$ns attach-agent $n0 $tcp
+
+set sink [new Agent/TCPSink]
+$ns attach-agent $n1 $sink
+$ns connect $tcp $sink
+
+set ftp [new Application/FTP]
+$ftp attach-agent $tcp
+
+$ns at 1.0 "$ftp start"
+$ns at 5.0 "$ftp stop"
+
+proc finish {} {
+    global ns nf tf
+    $ns flush-trace
+    close $nf
+    close $tf
+    exec nam q3.nam &
+    exit 0
+}
+$ns at 6.0 "finish"
+$ns run

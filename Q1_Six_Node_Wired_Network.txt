@@ -1,0 +1,54 @@
+# Six-node wired network with an alternate path
+set ns [new Simulator]
+
+set nf [open q1.nam w]
+$ns namtrace-all $nf
+set tf [open q1.tr w]
+$ns trace-all $tf
+
+# Create six nodes
+for {set i 0} {$i < 6} {incr i} {
+    set n($i) [$ns node]
+}
+
+# Wired links: chain plus one alternate link
+$ns duplex-link $n(0) $n(1) 1Mb 10ms DropTail
+$ns duplex-link $n(1) $n(2) 1Mb 10ms DropTail
+$ns duplex-link $n(2) $n(3) 1Mb 10ms DropTail
+$ns duplex-link $n(3) $n(4) 1Mb 10ms DropTail
+$ns duplex-link $n(4) $n(5) 1Mb 10ms DropTail
+$ns duplex-link $n(1) $n(4) 2Mb 5ms DropTail
+
+# Arrange nodes in NAM
+$ns duplex-link-op $n(0) $n(1) orient right
+$ns duplex-link-op $n(1) $n(2) orient right
+$ns duplex-link-op $n(2) $n(3) orient right
+$ns duplex-link-op $n(3) $n(4) orient right
+$ns duplex-link-op $n(4) $n(5) orient right
+$ns duplex-link-op $n(1) $n(4) orient down
+
+# UDP traffic from node 0 to node 5
+set udp [new Agent/UDP]
+$ns attach-agent $n(0) $udp
+set null [new Agent/Null]
+$ns attach-agent $n(5) $null
+$ns connect $udp $null
+
+set cbr [new Application/Traffic/CBR]
+$cbr set packetSize_ 512
+$cbr set interval_ 0.2
+$cbr attach-agent $udp
+
+$ns at 1.0 "$cbr start"
+$ns at 5.0 "$cbr stop"
+
+proc finish {} {
+    global ns nf tf
+    $ns flush-trace
+    close $nf
+    close $tf
+    exec nam q1.nam &
+    exit 0
+}
+$ns at 6.0 "finish"
+$ns run

@@ -1,0 +1,41 @@
+# Two-node UDP/CBR simulation
+set ns [new Simulator]
+
+set nf [open q4.nam w]
+$ns namtrace-all $nf
+set tf [open q4.tr w]
+$ns trace-all $tf
+
+set n0 [$ns node]
+set n1 [$ns node]
+
+$ns duplex-link $n0 $n1 1Mb 5ms DropTail
+$ns duplex-link-op $n0 $n1 orient right
+
+# UDP sender and Null receiver
+set udp [new Agent/UDP]
+$ns attach-agent $n0 $udp
+
+set null [new Agent/Null]
+$ns attach-agent $n1 $null
+$ns connect $udp $null
+
+# CBR traffic: packet size 1024 bytes, interval 0.1 seconds
+set cbr [new Application/Traffic/CBR]
+$cbr set packetSize_ 1024
+$cbr set interval_ 0.1
+$cbr attach-agent $udp
+
+$ns at 1.0 "$cbr start"
+$ns at 5.0 "$cbr stop"
+
+proc finish {} {
+    global ns nf tf
+    $ns flush-trace
+    close $nf
+    close $tf
+    exec nam q4.nam &
+    exit 0
+}
+$ns at 6.0 "finish"
+$ns run
